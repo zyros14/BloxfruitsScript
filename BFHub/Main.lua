@@ -45,24 +45,39 @@ end
 
 local function SafeHttp(Url)
     local Success, Result = pcall(function()
+        return game:HttpGet(Url, true)
+    end)
+    if Success and Result and Result ~= "" then
+        return Result
+    end
+    
+    Success, Result = pcall(function()
+        local Base = Url:match("https://raw.githubusercontent.com/(.+)/([^/]+)/([^/]+)/(.+)")
+        if Base then
+            local Jsdelivr = "https://cdn.jsdelivr.net/gh/" .. Url:match("raw.githubusercontent.com/(.+)/([^/]+)/[^/]+/(.+)")
+            return game:HttpGet(Jsdelivr, true)
+        end
+    end)
+    if Success and Result and Result ~= "" then
+        return Result
+    end
+    
+    Success, Result = pcall(function()
         if syn and syn.request then
             return syn.request({Url = Url, Method = "GET"}).Body
-        elseif fluxus and fluxus.request then
-            return fluxus.request({Url = Url, Method = "GET"}).Body
         elseif http_request then
             return http_request({Url = Url, Method = "GET"}).Body
         elseif request then
             return request({Url = Url, Method = "GET"}).Body
-        else
-            return game:HttpGet(Url)
+        elseif fluxus and fluxus.request then
+            return fluxus.request({Url = Url, Method = "GET"}).Body
         end
     end)
-    if Success then
+    if Success and Result and Result ~= "" then
         return Result
-    else
-        warn("[ZYROS] HTTP failed: " .. tostring(Result))
-        return nil
     end
+    
+    return nil
 end
 
 local ScreenGui = Create("ScreenGui", {
