@@ -215,16 +215,26 @@ local function LoadModule(Name, Tab)
     local Url = "https://raw.githubusercontent.com/zyros14/BloxfruitsScript/master/Modules/" .. Name .. ".lua"
     local Result = SafeHttp(Url)
     if Result then
-        local Success, Mod = pcall(function()
-            return loadstring(Result)()
-        end)
-        if Success and Mod and Mod.Init then
-            Mod.Init(Tab)
-            Modules[Name] = Mod
-            print("[ZYROS] Loaded: " .. Name)
+        local LoadFunc = loadstring or load
+        local Fn, Err = LoadFunc(Result)
+        if Fn then
+            local Success, Mod = pcall(Fn)
+            if Success and Mod and Mod.Init then
+                local InitSuccess, InitErr = pcall(function() Mod.Init(Tab) end)
+                if InitSuccess then
+                    Modules[Name] = Mod
+                    print("[ZYROS] Loaded: " .. Name)
+                else
+                    warn("[ZYROS] Init error (" .. Name .. "): " .. tostring(InitErr))
+                end
+            else
+                warn("[ZYROS] Exec error (" .. Name .. "): " .. tostring(Mod))
+            end
         else
-            warn("[ZYROS] Failed to init: " .. Name)
+            warn("[ZYROS] Load error (" .. Name .. "): " .. tostring(Err))
         end
+    else
+        warn("[ZYROS] HTTP failed: " .. Name)
     end
 end
 
