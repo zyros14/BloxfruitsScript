@@ -43,39 +43,57 @@ local function Create(Class, Properties, Children)
     return Inst
 end
 
+local function IsValidLua(Code)
+    if not Code or Code == "" then return false end
+    if Code:match("^%s*<!DOCTYPE") or Code:match("^%s*<html") then return false end
+    if Code:match("^%s*404") or Code:match("^%s*Not Found") then return false end
+    return true
+end
+
 local function SafeHttp(Url)
+    local Jsdelivr = Url:gsub("raw.githubusercontent.com/([^/]+)/([^/]+)/([^/]+)/", "cdn.jsdelivr.net/gh/%1/%2@%3/")
+    
     local Success, Result = pcall(function()
-        return game:HttpGet(Url, true)
+        return game:HttpGet(Jsdelivr)
     end)
-    if Success and Result and Result ~= "" then
-        return Result
-    end
+    if Success and IsValidLua(Result) then return Result end
     
     Success, Result = pcall(function()
-        local Base = Url:match("https://raw.githubusercontent.com/(.+)/([^/]+)/([^/]+)/(.+)")
-        if Base then
-            local Jsdelivr = "https://cdn.jsdelivr.net/gh/" .. Url:match("raw.githubusercontent.com/(.+)/([^/]+)/[^/]+/(.+)")
-            return game:HttpGet(Jsdelivr, true)
-        end
+        return game:HttpGet(Url)
     end)
-    if Success and Result and Result ~= "" then
-        return Result
-    end
+    if Success and IsValidLua(Result) then return Result end
     
     Success, Result = pcall(function()
         if syn and syn.request then
-            return syn.request({Url = Url, Method = "GET"}).Body
-        elseif http_request then
-            return http_request({Url = Url, Method = "GET"}).Body
-        elseif request then
-            return request({Url = Url, Method = "GET"}).Body
-        elseif fluxus and fluxus.request then
-            return fluxus.request({Url = Url, Method = "GET"}).Body
+            local Res = syn.request({Url = Url, Method = "GET"})
+            if Res and Res.Body and IsValidLua(Res.Body) then return Res.Body end
         end
     end)
-    if Success and Result and Result ~= "" then
-        return Result
-    end
+    if Success and IsValidLua(Result) then return Result end
+    
+    Success, Result = pcall(function()
+        if http_request then
+            local Res = http_request({Url = Url, Method = "GET"})
+            if Res and Res.Body and IsValidLua(Res.Body) then return Res.Body end
+        end
+    end)
+    if Success and IsValidLua(Result) then return Result end
+    
+    Success, Result = pcall(function()
+        if request then
+            local Res = request({Url = Url, Method = "GET"})
+            if Res and Res.Body and IsValidLua(Res.Body) then return Res.Body end
+        end
+    end)
+    if Success and IsValidLua(Result) then return Result end
+    
+    Success, Result = pcall(function()
+        if fluxus and fluxus.request then
+            local Res = fluxus.request({Url = Url, Method = "GET"})
+            if Res and Res.Body and IsValidLua(Res.Body) then return Res.Body end
+        end
+    end)
+    if Success and IsValidLua(Result) then return Result end
     
     return nil
 end
