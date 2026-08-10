@@ -319,6 +319,15 @@ TitleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
 TitleLabel.TextSize = 14
 TitleLabel.TextXAlignment = Enum.TextXAlignment.Left
 
+local CloseBtn = Instance.new("TextButton", TitleBar)
+CloseBtn.BackgroundTransparency = 1
+CloseBtn.Position = UDim2.new(1, -60, 0, 0)
+CloseBtn.Size = UDim2.new(0, 30, 1, 0)
+CloseBtn.Font = Enum.Font.GothamBold
+CloseBtn.Text = "X"
+CloseBtn.TextColor3 = Color3.fromRGB(255, 80, 80)
+CloseBtn.TextSize = 14
+
 local MinBtn = Instance.new("TextButton", TitleBar)
 MinBtn.BackgroundTransparency = 1
 MinBtn.Position = UDim2.new(1, -30, 0, 0)
@@ -327,6 +336,29 @@ MinBtn.Font = Enum.Font.GothamBold
 MinBtn.Text = "—"
 MinBtn.TextColor3 = Color3.fromRGB(200, 200, 200)
 MinBtn.TextSize = 16
+
+CloseBtn.MouseButton1Click:Connect(function()
+    AutoFarm = false
+    AutoMastery = false
+    AutoRaid = false
+    AutoStats = false
+    FruitESPRunning = false
+    FruitTween = false
+    FruitNotify = false
+    PlayerESP = false
+    ChestESP = false
+    DisableNoClip()
+    StopTween()
+    DisableSpeed()
+    if NoClipConnection then NoClipConnection:Disconnect(); NoClipConnection = nil end
+    for _, H in pairs(FruitHighlights) do H:Destroy() end
+    for _, H in pairs(PlayerHighlights) do H:Destroy() end
+    for _, H in pairs(ChestHighlights) do H:Destroy() end
+    FruitHighlights = {}
+    PlayerHighlights = {}
+    ChestHighlights = {}
+    ScreenGui:Destroy()
+end)
 
 local TabContainer = Instance.new("Frame", MainFrame)
 TabContainer.BackgroundColor3 = Color3.fromRGB(14, 14, 18)
