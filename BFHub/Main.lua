@@ -212,7 +212,7 @@ end)
 
 local Modules = {}
 local function LoadModule(Name, Tab)
-    local Url = "https://raw.githubusercontent.com/zyros14/BloxfruitsScript/main/Modules/" .. Name .. ".lua"
+    local Url = "https://raw.githubusercontent.com/zyros14/BloxfruitsScript/master/Modules/" .. Name .. ".lua"
     local Result = SafeHttp(Url)
     if Result then
         local Success, Mod = pcall(function()
