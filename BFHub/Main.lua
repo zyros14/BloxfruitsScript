@@ -279,24 +279,35 @@ local function Gethui()
     return PlayerGui
 end
 
-local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "ZyrosHub"
-ScreenGui.Parent = Gethui()
-ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-ScreenGui.ResetOnSpawn = false
+local UI = nil
+local ScreenGui = nil
+local MainFrame = nil
+local UIVisible = false
+local UIBuilt = false
 
-local MainFrame = Instance.new("Frame")
-MainFrame.Name = "Main"
-MainFrame.Parent = ScreenGui
-MainFrame.BackgroundColor3 = Color3.fromRGB(18, 18, 22)
-MainFrame.BorderSizePixel = 0
-MainFrame.Position = UDim2.new(0.5, -300, 0.5, -200)
-MainFrame.Size = UDim2.new(0, 600, 0, 400)
-MainFrame.ClipsDescendants = true
-Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 8)
-Instance.new("UIStroke", MainFrame).Color = Color3.fromRGB(40, 40, 50)
+local function BuildUI()
+    if UIBuilt then return end
+    UIBuilt = true
 
-local TitleBar = Instance.new("Frame")
+    ScreenGui = Instance.new("ScreenGui")
+    ScreenGui.Name = "ZyrosHub"
+    ScreenGui.Parent = Gethui()
+    ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+    ScreenGui.ResetOnSpawn = false
+    ScreenGui.Enabled = false
+
+    MainFrame = Instance.new("Frame")
+    MainFrame.Name = "Main"
+    MainFrame.Parent = ScreenGui
+    MainFrame.BackgroundColor3 = Color3.fromRGB(18, 18, 22)
+    MainFrame.BorderSizePixel = 0
+    MainFrame.Position = UDim2.new(0.5, -300, 0.5, -200)
+    MainFrame.Size = UDim2.new(0, 600, 0, 400)
+    MainFrame.ClipsDescendants = true
+    Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 8)
+    Instance.new("UIStroke", MainFrame).Color = Color3.fromRGB(40, 40, 50)
+
+    local TitleBar = Instance.new("Frame")
 TitleBar.Name = "TitleBar"
 TitleBar.Parent = MainFrame
 TitleBar.BackgroundColor3 = Color3.fromRGB(14, 14, 18)
@@ -356,7 +367,11 @@ CloseBtn.MouseButton1Click:Connect(function()
     FruitHighlights = {}
     PlayerHighlights = {}
     ChestHighlights = {}
-    pcall(function() ScreenGui:Destroy() end)
+     pcall(function() ScreenGui:Destroy() end)
+     ScreenGui = nil
+     MainFrame = nil
+     UIBuilt = false
+     UIVisible = false
 end)
 
 local TabContainer = Instance.new("Frame", MainFrame)
@@ -857,11 +872,6 @@ MakeToggle(FruitTab, "Fruit Notifier", function(V)
                 for _, Obj in pairs(Workspace:GetChildren()) do
                     if Obj:IsA("Tool") and Obj.Name:lower():find("fruit") and not NotifiedFruits[Obj] then
                         NotifiedFruits[Obj] = true
-                        pcall(function()
-                            game:GetService("StarterGui"):SetCore("SendNotification", {
-                                Title = "Fruit Spawned!", Text = Obj.Name .. " has spawned!", Duration = 10
-                            })
-                        end)
                     end
                 end
                 task.wait(1)
@@ -1060,6 +1070,22 @@ MakeButton(OtherTab, "Rejoin Server", function()
 end)
 
 Hub.Tabs["Farming"].Visible = true
+end) -- End BuildUI
+
+print("[ZyrosHub] Loaded! Press RightShift to open UI")
+
+UserInputService.InputBegan:Connect(function(Input, GameProcessed)
+    if GameProcessed then return end
+    if Input.KeyCode == Enum.KeyCode.RightShift then
+        if not UIBuilt then
+            BuildUI()
+        end
+        UIVisible = not UIVisible
+        if ScreenGui then
+            ScreenGui.Enabled = UIVisible
+        end
+    end
+end)
 
 task.spawn(function()
     local function ApplyBuso()
@@ -1113,6 +1139,9 @@ getgenv().ZyrosHubUnload = function()
     for _, H in pairs(PlayerHighlights) do pcall(function() H:Destroy() end) end
     for _, H in pairs(ChestHighlights) do pcall(function() H:Destroy() end) end
     pcall(function() ScreenGui:Destroy() end)
-end
+    UIBuilt = false
+    UIVisible = false
+end)
+end)
 end)
 end)
