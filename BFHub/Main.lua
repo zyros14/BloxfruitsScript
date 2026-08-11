@@ -270,17 +270,7 @@ local ChestHighlights = {}
 local NotifiedFruits = {}
 
 local function Gethui()
-    local Container = nil
-    pcall(function()
-        if gethui then
-            Container = gethui()
-        end
-    end)
-    if Container then return Container end
-    pcall(function()
-        Container = PlayerGui
-    end)
-    return Container or Instance.new("Folder")
+    return PlayerGui
 end
 
 local ScreenGui = Instance.new("ScreenGui")
