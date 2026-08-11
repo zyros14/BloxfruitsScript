@@ -1,7 +1,6 @@
 task.spawn(function()
 pcall(function()
 if not game:IsLoaded() then game.Loaded:Wait() end
-task.wait(2)
 
 local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
@@ -273,23 +272,13 @@ local PlayerHighlights = {}
 local ChestHighlights = {}
 local NotifiedFruits = {}
 
-local ScreenParent = PlayerGui
-pcall(function()
-    if gethui then
-        ScreenParent = gethui()
-    end
-end)
-
 local function Gethui()
-    return ScreenParent
+    return PlayerGui
 end
 
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "ZyrosHub"
-pcall(function() ScreenGui.Parent = Gethui() end)
-if not ScreenGui.Parent then
-    ScreenGui.Parent = PlayerGui
-end
+ScreenGui.Parent = Gethui()
 ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 ScreenGui.ResetOnSpawn = false
 
