@@ -270,13 +270,17 @@ local ChestHighlights = {}
 local NotifiedFruits = {}
 
 local function Gethui()
-    local S, R = pcall(function() if gethui then return gethui() end end)
-    if S and R then return R end
-    S, R = pcall(function() if cloneref then return cloneref(CoreGui) end end)
-    if S and R then return R end
-    S, R = pcall(function() return CoreGui end)
-    if S and R then return R end
-    return PlayerGui
+    local Container = nil
+    pcall(function()
+        if gethui then
+            Container = gethui()
+        end
+    end)
+    if Container then return Container end
+    pcall(function()
+        Container = PlayerGui
+    end)
+    return Container or Instance.new("Folder")
 end
 
 local ScreenGui = Instance.new("ScreenGui")
