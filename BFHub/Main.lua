@@ -1,7 +1,6 @@
-task.spawn(function()
-pcall(function()
 if not game:IsLoaded() then game.Loaded:Wait() end
 
+local function Main()
 local Players = game:GetService('Players')
 local UIS = game:GetService('UserInputService')
 local RunService = game:GetService('RunService')
@@ -10,9 +9,14 @@ local HttpService = game:GetService('HttpService')
 local VU = game:GetService('VirtualUser')
 local TS = game:GetService('TweenService')
 local LP = Players.LocalPlayer
+if not LP then return end
 local PG = LP:WaitForChild('PlayerGui')
+if not PG then return end
 local RS = game:GetService('ReplicatedStorage')
-local CommF_ = RS:WaitForChild('Remotes'):WaitForChild('CommF_')
+local Remotes = RS:WaitForChild('Remotes')
+if not Remotes then return end
+local CommF_ = Remotes:WaitForChild('CommF_')
+if not CommF_ then return end
 local WS = game:GetService('Workspace')
 
 -- ============================================================
@@ -934,5 +938,10 @@ end
 -- Initial buso
 pcall(function() SafeInvoke(CommF_, 'Buso') end)
 
-end)
-end)
+end
+
+-- Run
+local ok, err = pcall(Main)
+if not ok then
+    warn('[ZyrosHub] Error:', err)
+end
