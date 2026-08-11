@@ -19,7 +19,6 @@ local Workspace = game:GetService("Workspace")
 
 local Hub = {}
 Hub.Tabs = {}
-Hub.CurrentTab = nil
 Hub.Connections = {}
 
 pcall(function()
@@ -34,12 +33,12 @@ local function GetCharacter()
 end
 
 local function GetHumanoid()
-    local Char = GetCharacter()
+    local Char = LocalPlayer.Character
     return Char and Char:FindFirstChildOfClass("Humanoid")
 end
 
 local function GetRootPart()
-    local Char = GetCharacter()
+    local Char = LocalPlayer.Character
     return Char and Char:FindFirstChild("HumanoidRootPart")
 end
 
@@ -47,11 +46,6 @@ local function GetLevel()
     local Data = LocalPlayer:FindFirstChild("Data")
     if Data and Data:FindFirstChild("Level") then
         return Data.Level.Value
-    end
-    local LS = LocalPlayer:FindFirstChild("leaderstats")
-    if LS then
-        local L = LS:FindFirstChild("Level") or LS:FindFirstChild("Lvl")
-        if L then return L.Value end
     end
     return 1
 end
@@ -82,9 +76,30 @@ local function IsQuestVisible()
     return false, ""
 end
 
+local QuestNPCNames = {
+    Bandit = "Bandit",
+    Monkey = "Monkey",
+    Pirate = "Pirate",
+    ["Desert Bandit"] = "Desert Bandit",
+    ["Snow Bandit"] = "Snow Bandit",
+    Marine = "Marine",
+    ["Sky Bandit"] = "Sky Bandit",
+    Prisoner = "Prisoner",
+    Gladiator = "Gladiator",
+    ["Magma Bandit"] = "Magma Bandit",
+    Fishman = "Fishman",
+    ["Ice Adventurer"] = "Ice Adventurer",
+    ["Pirate King"] = "Pirate King",
+    ["Snow Mountain"] = "Snow Mountain",
+    ["Death Step"] = "Cyborg",
+    Cursed = "Cursed",
+    ["Final Sea"] = "Marine",
+}
+
 local function GetQuestNPC(Name)
+    local SearchName = QuestNPCNames[Name] or Name
     for _, Obj in pairs(Workspace:GetDescendants()) do
-        if Obj:IsA("Model") and Obj.Name:lower():find(Name:lower()) then
+        if Obj:IsA("Model") and Obj.Name == SearchName then
             local H = Obj:FindFirstChildOfClass("Humanoid")
             if H and H.Health > 0 then
                 local HRP = Obj:FindFirstChild("HumanoidRootPart")
@@ -103,7 +118,7 @@ local function FindEnemy(Name)
             end
         end
     end
-    for _, v in pairs(Workspace:GetDescendants()) do
+    for _, v in pairs(Workspace:GetChildren()) do
         if v:IsA("Model") and v.Name == Name and v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 then
             local HRP = v:FindFirstChild("HumanoidRootPart")
             if HRP then return v end
@@ -113,7 +128,7 @@ local function FindEnemy(Name)
 end
 
 local function FindMobSpawn(Name)
-    for _, v in pairs(Workspace:GetDescendants()) do
+    for _, v in pairs(Workspace:GetChildren()) do
         if v:IsA("Model") and v.Name == Name and v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 then
             local HRP = v:FindFirstChild("HumanoidRootPart")
             if HRP then return HRP.CFrame end
@@ -142,23 +157,6 @@ local function DisableNoClip()
     end
 end
 
-local BodyVel = nil
-local function EnableSpeed(Speed)
-    DisableSpeed()
-    local HRP = GetRootPart()
-    if not HRP then return end
-    BodyVel = Instance.new("BodyVelocity")
-    BodyVel.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
-    BodyVel.Velocity = Vector3.new(0, 0, 0)
-    BodyVel.Parent = HRP
-end
-local function DisableSpeed()
-    if BodyVel then
-        BodyVel:Destroy()
-        BodyVel = nil
-    end
-end
-
 local FarmTween = nil
 local function TweenToPos(CF)
     local HRP = GetRootPart()
@@ -169,12 +167,16 @@ local function TweenToPos(CF)
     local TI = TweenInfo.new(Dist / Spd, Enum.EasingStyle.Linear)
     FarmTween = TweenService:Create(HRP, TI, {CFrame = CF})
     FarmTween:Play()
-    FarmTween.Completed:Wait()
-    FarmTween = nil
 end
 local function StopTween()
     if FarmTween then
         FarmTween:Cancel()
+        FarmTween = nil
+    end
+end
+local function WaitForTween()
+    if FarmTween then
+        FarmTween.Completed:Wait()
         FarmTween = nil
     end
 end
@@ -193,9 +195,9 @@ local function EquipTool(Name)
 end
 
 local function EquipAny(Keyword)
-    local Char = GetCharacter()
+    local Char = LocalPlayer.Character
     local Backpack = LocalPlayer:FindFirstChild("Backpack")
-    if not Char or not Backpack then return end
+    if not Char or not Backpack then return nil end
     for _, v in pairs(Backpack:GetChildren()) do
         if v:IsA("Tool") and v.Name:lower():find(Keyword:lower()) then
             Char.Humanoid:EquipTool(v)
@@ -215,26 +217,27 @@ local function Attack(Enemy)
     end)
 end
 
+local Quests = {
+    {L=1, N="Bandit", QN="BanditQuest1", QI=1, CF=CFrame.new(978, 18, 1500), MN="Bandit"},
+    {L=15, N="Monkey", QN="MonkeyQuest", QI=1, CF=CFrame.new(-1250, 18, 350), MN="Monkey"},
+    {L=30, N="Pirate", QN="BuggyQuest1", QI=1, CF=CFrame.new(-1150, 18, 450), MN="Pirate"},
+    {L=50, N="Desert Bandit", QN="DesertQuest", QI=1, CF=CFrame.new(1100, 18, 450), MN="Desert Bandit"},
+    {L=75, N="Snow Bandit", QN="SnowQuest", QI=1, CF=CFrame.new(750, 18, -1200), MN="Snow Bandit"},
+    {L=100, N="Marine", QN="MarineQuest1", QI=1, CF=CFrame.new(-4500, 30, 400), MN="Marine"},
+    {L=150, N="Sky Bandit", QN="SkyQuest", QI=1, CF=CFrame.new(-4500, 200, 400), MN="Sky Bandit"},
+    {L=225, N="Prisoner", QN="PrisonerQuest", QI=1, CF=CFrame.new(4850, 18, 700), MN="Prisoner"},
+    {L=300, N="Gladiator", QN="ColosseumQuest", QI=1, CF=CFrame.new(-1300, 18, -2800), MN="Gladiator"},
+    {L=375, N="Magma Bandit", QN="MagmaQuest", QI=1, CF=CFrame.new(-5200, 18, 7500), MN="Magma Bandit"},
+    {L=450, N="Fishman", QN="FishmanQuest", QI=1, CF=CFrame.new(5500, 18, 300), MN="Fishman"},
+    {L=525, N="Ice Adventurer", QN="IceQuest", QI=1, CF=CFrame.new(6000, 18, 8000), MN="Ice Adventurer"},
+    {L=600, N="Pirate King", QN="PirateKingQuest", QI=1, CF=CFrame.new(-5000, 30, -3000), MN="Pirate King"},
+    {L=675, N="Snow Mountain", QN="SkyQuest2", QI=2, CF=CFrame.new(300, 400, -500), MN="Snow Mountain"},
+    {L=750, N="Death Step", QN="FountainQuest", QI=2, CF=CFrame.new(300, 18, -6000), MN="Cyborg"},
+    {L=825, N="Cursed", QN="CursedShipQuest", QI=1, CF=CFrame.new(900, 18, -11000), MN="Cursed"},
+    {L=900, N="Final Sea", QN="MarineQuest3", QI=1, CF=CFrame.new(-6500, 20, 8500), MN="Marine"},
+}
+
 local function CheckQuest(Level)
-    local Quests = {
-        {L=1, N="Bandit", QN="BanditQuest1", QI=1, CF=CFrame.new(978, 18, 1500), MF=CFrame.new(1100, 18, 1500), MN="Bandit"},
-        {L=15, N="Monkey", QN="MonkeyQuest", QI=1, CF=CFrame.new(-1250, 18, 350), MF=CFrame.new(-1250, 18, 350), MN="Monkey"},
-        {L=30, N="Pirate", QN="BuggyQuest1", QI=1, CF=CFrame.new(-1150, 18, 450), MF=CFrame.new(-1150, 18, 450), MN="Pirate"},
-        {L=50, N="Desert Bandit", QN="DesertQuest", QI=1, CF=CFrame.new(1100, 18, 450), MF=CFrame.new(1100, 18, 450), MN="Desert Bandit"},
-        {L=75, N="Snow Bandit", QN="SnowQuest", QI=1, CF=CFrame.new(750, 18, -1200), MF=CFrame.new(750, 18, -1200), MN="Snow Bandit"},
-        {L=100, N="Marine", QN="MarineQuest1", QI=1, CF=CFrame.new(-4500, 30, 400), MF=CFrame.new(-4500, 30, 400), MN="Marine"},
-        {L=150, N="Sky Bandit", QN="SkyQuest", QI=1, CF=CFrame.new(-4500, 200, 400), MF=CFrame.new(-4500, 200, 400), MN="Sky Bandit"},
-        {L=225, N="Prisoner", QN="PrisonerQuest", QI=1, CF=CFrame.new(4850, 18, 700), MF=CFrame.new(4850, 18, 700), MN="Prisoner"},
-        {L=300, N="Gladiator", QN="ColosseumQuest", QI=1, CF=CFrame.new(-1300, 18, -2800), MF=CFrame.new(-1300, 18, -2800), MN="Gladiator"},
-        {L=375, N="Magma Bandit", QN="MagmaQuest", QI=1, CF=CFrame.new(-5200, 18, 7500), MF=CFrame.new(-5200, 18, 7500), MN="Magma Bandit"},
-        {L=450, N="Fishman", QN="FishmanQuest", QI=1, CF=CFrame.new(5500, 18, 300), MF=CFrame.new(5500, 18, 300), MN="Fishman"},
-        {L=525, N="Ice Adventurer", QN="IceQuest", QI=1, CF=CFrame.new(6000, 18, 8000), MF=CFrame.new(6000, 18, 8000), MN="Ice Adventurer"},
-        {L=600, N="Pirate King", QN="PirateKingQuest", QI=1, CF=CFrame.new(-5000, 30, -3000), MF=CFrame.new(-5000, 30, -3000), MN="Pirate King"},
-        {L=675, N="Snow Mountain", QN="SkyQuest2", QI=2, CF=CFrame.new(300, 400, -500), MF=CFrame.new(300, 400, -500), MN="Snow Mountain"},
-        {L=750, N="Death Step", QN="FountainQuest", QI=2, CF=CFrame.new(300, 18, -6000), MF=CFrame.new(300, 18, -6000), MN="Cyborg"},
-        {L=825, N="Cursed", QN="CursedShipQuest", QI=1, CF=CFrame.new(900, 18, -11000), MF=CFrame.new(900, 18, -11000), MN="Cursed"},
-        {L=900, N="Final Sea", QN="MarineQuest3", QI=1, CF=CFrame.new(-6500, 20, 8500), MF=CFrame.new(-6500, 20, 8500), MN="Marine"},
-    }
     for i = #Quests, 1, -1 do
         if Level >= Quests[i].L then
             return Quests[i]
@@ -263,7 +266,6 @@ local FruitNotify = false
 local PlayerESP = false
 local ChestESP = false
 local SelectedStat = "Melee"
-local SelectedWeapon = "Combat"
 local FarmMode = "Above"
 local MasteryType = "Melee"
 
@@ -271,6 +273,7 @@ local FruitHighlights = {}
 local PlayerHighlights = {}
 local ChestHighlights = {}
 local NotifiedFruits = {}
+local FruitESPRunning = false
 
 local function Gethui()
     return PlayerGui
@@ -346,15 +349,14 @@ CloseBtn.MouseButton1Click:Connect(function()
     ChestESP = false
     DisableNoClip()
     StopTween()
-    DisableSpeed()
     if NoClipConnection then NoClipConnection:Disconnect(); NoClipConnection = nil end
-    for _, H in pairs(FruitHighlights) do H:Destroy() end
-    for _, H in pairs(PlayerHighlights) do H:Destroy() end
-    for _, H in pairs(ChestHighlights) do H:Destroy() end
+    for _, H in pairs(FruitHighlights) do pcall(function() H:Destroy() end) end
+    for _, H in pairs(PlayerHighlights) do pcall(function() H:Destroy() end) end
+    for _, H in pairs(ChestHighlights) do pcall(function() H:Destroy() end) end
     FruitHighlights = {}
     PlayerHighlights = {}
     ChestHighlights = {}
-    ScreenGui:Destroy()
+    pcall(function() ScreenGui:Destroy() end)
 end)
 
 local TabContainer = Instance.new("Frame", MainFrame)
@@ -563,20 +565,20 @@ local function MakeDropdown(Parent, Text, Default, Options, Callback)
     CB.ZIndex = 2
     local OB = {}
     for i, O in ipairs(Options) do
-        local O = Instance.new("TextButton", Frame)
-        O.BackgroundColor3 = Color3.fromRGB(40, 40, 55)
-        O.BorderSizePixel = 0
-        O.Position = UDim2.new(0, 4, 0, 32 + ((i - 1) * 28))
-        O.Size = UDim2.new(1, -8, 0, 26)
-        O.Font = Enum.Font.Gotham
-        O.Text = "  " .. O
-        O.TextColor3 = Color3.fromRGB(200, 200, 210)
-        O.TextSize = 11
-        O.TextXAlignment = Enum.TextXAlignment.Left
-        O.Visible = false
-        O.ZIndex = 3
-        Instance.new("UICorner", O).CornerRadius = UDim.new(0, 4)
-        O.MouseButton1Click:Connect(function()
+        local OptionBtn = Instance.new("TextButton", Frame)
+        OptionBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 55)
+        OptionBtn.BorderSizePixel = 0
+        OptionBtn.Position = UDim2.new(0, 4, 0, 32 + ((i - 1) * 28))
+        OptionBtn.Size = UDim2.new(1, -8, 0, 26)
+        OptionBtn.Font = Enum.Font.Gotham
+        OptionBtn.Text = "  " .. O
+        OptionBtn.TextColor3 = Color3.fromRGB(200, 200, 210)
+        OptionBtn.TextSize = 11
+        OptionBtn.TextXAlignment = Enum.TextXAlignment.Left
+        OptionBtn.Visible = false
+        OptionBtn.ZIndex = 3
+        Instance.new("UICorner", OptionBtn).CornerRadius = UDim.new(0, 4)
+        OptionBtn.MouseButton1Click:Connect(function()
             V = Options[i]
             L.Text = Text .. ": " .. V
             Frame.Size = UDim2.new(1, 0, 0, 32)
@@ -584,7 +586,7 @@ local function MakeDropdown(Parent, Text, Default, Options, Callback)
             for _, X in pairs(OB) do X.Visible = false end
             if Callback then Callback(V) end
         end)
-        table.insert(OB, O)
+        table.insert(OB, OptionBtn)
     end
     local Open = false
     CB.MouseButton1Click:Connect(function()
@@ -650,57 +652,65 @@ MakeToggle(FarmTab, "Auto Farm Level", function(V)
         EnableNoClip()
         task.spawn(function()
             while AutoFarm do
+                if not IsAlive() then
+                    GetCharacter()
+                    task.wait(2)
+                end
                 local Lvl = GetLevel()
                 local Q = CheckQuest(Lvl)
-                local NPC, HRP = GetQuestNPC(Q.N)
                 local QuestVis, QuestName = IsQuestVisible()
                 if not QuestVis then
-                    if NPC and HRP then
-                        TweenToPos(HRP.CFrame * CFrame.new(0, 0, 5))
+                    local NPC, NPCPos = GetQuestNPC(Q.N)
+                    if NPC and NPCPos then
+                        TweenToPos(NPCPos.CFrame * CFrame.new(0, 0, 5))
+                        WaitForTween()
                         pcall(function()
                             CommF_:InvokeServer("SetSpawnPoint")
                             CommF_:InvokeServer(Q.QN, Q.QI)
                         end)
                     else
                         TweenToPos(Q.CF)
+                        WaitForTween()
                     end
-                    task.wait(1)
+                    task.wait(1.5)
                 else
                     local Enemy = FindEnemy(Q.MN)
                     if Enemy then
                         local EHRP = Enemy:FindFirstChild("HumanoidRootPart")
                         if EHRP then
                             local Offset = FarmMode == "Above" and CFrame.new(0, 40, 0) or FarmMode == "Behind" and CFrame.new(0, 0, -5) or CFrame.new(0, -5, 0)
-                            TweenToPos(EHRP.CFrame * Offset)
                             local A = 0
-                            while AutoFarm and A < 100 do
-                                local Hum = Enemy:FindFirstChildOfClass("Humanoid")
-                                if not Hum or Hum.Health <= 0 then break end
+                            while AutoFarm and A < 100 and IsAlive() do
                                 local CurEnemy = FindEnemy(Q.MN)
-                                if CurEnemy then
-                                    local CHP = CurEnemy:FindFirstChild("HumanoidRootPart")
-                                    if CHP then
-                                        TweenToPos(CHP.CFrame * Offset)
-                                        pcall(function()
-                                            CurEnemy.Humanoid.PlatformStand = true
-                                            CurEnemy.Humanoid.Sit = true
-                                            CurEnemy.HumanoidRootPart.CanCollide = false
-                                            CurEnemy.HumanoidRootPart.Size = Vector3.new(50, 50, 50)
-                                        end)
-                                        Attack(CurEnemy)
-                                    end
-                                end
+                                if not CurEnemy then break end
+                                local Hum = CurEnemy:FindFirstChildOfClass("Humanoid")
+                                if not Hum or Hum.Health <= 0 then break end
+                                local CHP = CurEnemy:FindFirstChild("HumanoidRootPart")
+                                if not CHP then break end
+                                TweenToPos(CHP.CFrame * Offset)
+                                pcall(function()
+                                    Hum.PlatformStand = true
+                                    Hum.Sit = true
+                                    CHP.CanCollide = false
+                                    CHP.Size = Vector3.new(50, 50, 50)
+                                end)
+                                Attack(CurEnemy)
                                 task.wait(0.3)
                                 A = A + 1
                             end
                         end
                     else
                         local SpawnCF = FindMobSpawn(Q.MN)
-                        if SpawnCF then TweenToPos(SpawnCF) end
+                        if SpawnCF then
+                            TweenToPos(SpawnCF)
+                            WaitForTween()
+                        end
                     end
                 end
                 task.wait(0.5)
             end
+            DisableNoClip()
+            StopTween()
         end)
     else
         DisableNoClip()
@@ -720,6 +730,10 @@ MakeToggle(FarmTab, "Auto Mastery", function(V)
         EnableNoClip()
         task.spawn(function()
             while AutoMastery do
+                if not IsAlive() then
+                    GetCharacter()
+                    task.wait(2)
+                end
                 local Lvl = GetLevel()
                 local Target = MasteryTargets[1]
                 for i = #MasteryTargets, 1, -1 do
@@ -737,8 +751,9 @@ MakeToggle(FarmTab, "Auto Mastery", function(V)
                 local NPC, HRP = GetQuestNPC(Target.N)
                 if NPC and HRP then
                     TweenToPos(HRP.CFrame * CFrame.new(0, 30, 0))
+                    WaitForTween()
                     local A = 0
-                    while AutoMastery and A < 100 do
+                    while AutoMastery and A < 100 and IsAlive() do
                         local Hum = NPC:FindFirstChildOfClass("Humanoid")
                         if not Hum or Hum.Health <= 0 then break end
                         Attack(NPC)
@@ -746,10 +761,14 @@ MakeToggle(FarmTab, "Auto Mastery", function(V)
                         A = A + 1
                     end
                 else
-                    TweenToPos(Target.N == "Bandit" and CFrame.new(978, 18, 1500) or CFrame.new(-1250, 18, 350))
+                    local Fallback = Target.N == "Bandit" and CFrame.new(978, 18, 1500) or CFrame.new(-1250, 18, 350)
+                    TweenToPos(Fallback)
+                    WaitForTween()
                 end
                 task.wait(0.5)
             end
+            DisableNoClip()
+            StopTween()
         end)
     else
         DisableNoClip()
@@ -758,7 +777,6 @@ MakeToggle(FarmTab, "Auto Mastery", function(V)
 end)
 TLabel(FarmTab, "Farms mastery for selected weapon type")
 
-local FruitESPRunning = false
 Label(FruitTab, "Fruit ESP")
 Section(FruitTab)
 MakeToggle(FruitTab, "Fruit ESP", function(V)
@@ -766,7 +784,7 @@ MakeToggle(FruitTab, "Fruit ESP", function(V)
     if V then
         task.spawn(function()
             while FruitESPRunning do
-                for _, Obj in pairs(Workspace:GetDescendants()) do
+                for _, Obj in pairs(Workspace:GetChildren()) do
                     if (Obj:IsA("Tool") or Obj:IsA("Model")) and Obj.Name:lower():find("fruit") and not FruitHighlights[Obj] then
                         local H = Instance.new("Highlight")
                         H.FillColor = Color3.fromRGB(255, 170, 0)
@@ -782,7 +800,7 @@ MakeToggle(FruitTab, "Fruit ESP", function(V)
             end
         end)
     else
-        for _, H in pairs(FruitHighlights) do H:Destroy() end
+        for _, H in pairs(FruitHighlights) do pcall(function() H:Destroy() end) end
         FruitHighlights = {}
     end
 end)
@@ -796,7 +814,7 @@ MakeToggle(FruitTab, "Tween to Fruits", function(V)
         task.spawn(function()
             while FruitTween do
                 local Closest, MinDist = nil, math.huge
-                local Char = GetCharacter()
+                local Char = LocalPlayer.Character
                 if Char then
                     local HRP = Char:FindFirstChild("HumanoidRootPart")
                     if HRP then
@@ -813,11 +831,14 @@ MakeToggle(FruitTab, "Tween to Fruits", function(V)
                 end
                 if Closest then
                     TweenToPos(CFrame.new(Closest.Position + Vector3.new(0, 3, 0)))
+                    WaitForTween()
                     task.wait(0.5)
                 else
                     task.wait(2)
                 end
             end
+            DisableNoClip()
+            StopTween()
         end)
     else
         DisableNoClip()
@@ -873,6 +894,7 @@ MakeDropdown(TeleportTab, "Select Island", IslandOrder[1], IslandOrder, function
     if T then
         EnableNoClip()
         TweenToPos(T)
+        WaitForTween()
         task.wait(1)
         DisableNoClip()
     end
@@ -897,13 +919,13 @@ MakeToggle(VisualsTab, "Player ESP", function(V)
             end
             while PlayerESP do
                 for P, H in pairs(PlayerHighlights) do
-                    if P.Character then H.Adornee = P.Character else H.Adornee = nil end
+                    if P and P.Character then H.Adornee = P.Character else H.Adornee = nil end
                 end
                 task.wait(0.5)
             end
         end)
     else
-        for _, H in pairs(PlayerHighlights) do H:Destroy() end
+        for _, H in pairs(PlayerHighlights) do pcall(function() H:Destroy() end) end
         PlayerHighlights = {}
     end
 end)
@@ -915,7 +937,7 @@ MakeToggle(VisualsTab, "Chest ESP", function(V)
     if V then
         task.spawn(function()
             while ChestESP do
-                for _, Obj in pairs(Workspace:GetDescendants()) do
+                for _, Obj in pairs(Workspace:GetChildren()) do
                     if (Obj:IsA("Model") or Obj:IsA("Part")) and Obj.Name:lower():find("chest") and not ChestHighlights[Obj] then
                         local H = Instance.new("Highlight")
                         H.FillColor = Color3.fromRGB(0, 170, 255)
@@ -931,7 +953,7 @@ MakeToggle(VisualsTab, "Chest ESP", function(V)
             end
         end)
     else
-        for _, H in pairs(ChestHighlights) do H:Destroy() end
+        for _, H in pairs(ChestHighlights) do pcall(function() H:Destroy() end) end
         ChestHighlights = {}
     end
 end)
@@ -949,13 +971,14 @@ MakeToggle(RaidTab, "Auto Raid", function(V)
                     CommF_:InvokeServer("Awakener", "Awaken")
                 end)
                 task.wait(2)
-                for _, Obj in pairs(Workspace:GetDescendants()) do
+                for _, Obj in pairs(Workspace:GetChildren()) do
                     if Obj:IsA("Model") and Obj.Name:lower():find("raid") then
                         local Hum = Obj:FindFirstChildOfClass("Humanoid")
                         if Hum and Hum.Health > 0 then
                             local HRP = Obj:FindFirstChild("HumanoidRootPart")
                             if HRP then
                                 TweenToPos(HRP.CFrame * CFrame.new(0, 0, 5))
+                                WaitForTween()
                                 local A = 0
                                 while Hum.Health > 0 and A < 50 and AutoRaid do
                                     Attack(Obj)
@@ -968,6 +991,8 @@ MakeToggle(RaidTab, "Auto Raid", function(V)
                 end
                 task.wait(5)
             end
+            DisableNoClip()
+            StopTween()
         end)
     else
         DisableNoClip()
@@ -1036,17 +1061,40 @@ end)
 
 Hub.Tabs["Farming"].Visible = true
 
-pcall(function()
-    CommF_:InvokeServer("Buso")
-end)
-
-RunService.RenderStepped:Connect(function()
-    if AutoFarm or AutoMastery or FruitTween then
+task.spawn(function()
+    local function ApplyBuso()
         pcall(function()
-            local Hum = GetHumanoid()
-            if Hum then Hum.Sit = false end
+            CommF_:InvokeServer("Buso")
         end)
     end
+    ApplyBuso()
+    LocalPlayer.CharacterAdded:Connect(function()
+        task.wait(1)
+        ApplyBuso()
+        pcall(function()
+            if not LocalPlayer.Data.Team or LocalPlayer.Data.Team.Value == "" then
+                CommF_:InvokeServer("SetTeam", "Pirates")
+            end
+        end)
+    end)
+end)
+
+task.spawn(function()
+    local BusoLoop = RunService.RenderStepped:Connect(function()
+        if AutoFarm or AutoMastery or FruitTween or AutoRaid then
+            pcall(function()
+                local Char = LocalPlayer.Character
+                if not Char then return end
+                local Hum = Char:FindFirstChildOfClass("Humanoid")
+                if Hum then Hum.Sit = false end
+                local BusoValue = Char:FindFirstChild("HasBuso")
+                if not BusoValue or not BusoValue.Value then
+                    CommF_:InvokeServer("Buso")
+                end
+            end)
+        end
+    end)
+    table.insert(Hub.Connections, BusoLoop)
 end)
 
 getgenv().ZyrosHubUnload = function()
@@ -1061,11 +1109,10 @@ getgenv().ZyrosHubUnload = function()
     ChestESP = false
     DisableNoClip()
     StopTween()
-    DisableSpeed()
-    for _, H in pairs(FruitHighlights) do H:Destroy() end
-    for _, H in pairs(PlayerHighlights) do H:Destroy() end
-    for _, H in pairs(ChestHighlights) do H:Destroy() end
-    ScreenGui:Destroy()
+    for _, H in pairs(FruitHighlights) do pcall(function() H:Destroy() end) end
+    for _, H in pairs(PlayerHighlights) do pcall(function() H:Destroy() end) end
+    for _, H in pairs(ChestHighlights) do pcall(function() H:Destroy() end) end
+    pcall(function() ScreenGui:Destroy() end)
 end
 end)
 end)
