@@ -1,3 +1,5 @@
+task.spawn(function()
+pcall(function()
 local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
@@ -1050,15 +1052,18 @@ getgenv().ZyrosHubUnload = function()
     AutoMastery = false
     AutoRaid = false
     AutoStats = false
-    FruitESP = false
+    FruitESPRunning = false
     FruitTween = false
     FruitNotify = false
     PlayerESP = false
     ChestESP = false
     DisableNoClip()
     StopTween()
+    DisableSpeed()
     for _, H in pairs(FruitHighlights) do H:Destroy() end
     for _, H in pairs(PlayerHighlights) do H:Destroy() end
     for _, H in pairs(ChestHighlights) do H:Destroy() end
     ScreenGui:Destroy()
 end
+end)
+end)
